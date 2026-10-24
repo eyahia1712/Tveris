@@ -1,12 +1,6 @@
 # <img src="app/icon.svg" alt="Tveris logo" width="34" height="34" valign="middle" /> Tveris
 
 ![A container ship sailing out of port, drawn in the Tveris colours](docs/screenshots/ship.png)
-![The Tveris landing page](docs/screenshots/landing.png)
-
-*The landing page at `/`: what Tveris is, and the ship that carries the cargo
-those documents describe.*
-
-Every bill of lading checked before the ship sails.
 
 **Tveris connects to a shipping documentation desk's inbox, reads every email,
 classifies it into five queues, compares each draft bill of lading against its
@@ -188,35 +182,14 @@ pipeline against the organisers' server and posts the official self-evaluation.
 ## 🏗️ Architecture
 
 ```mermaid
-%%{init: {"flowchart": {"nodeSpacing": 40, "rankSpacing": 50}, "themeVariables": {"fontSize": "18px"}}}%%
-flowchart TB
-  subgraph Sources["📥 Sources"]
-    direction LR
-    A["Sample inbox<br/>bundle"]
-    B["Evaluation<br/>Docker server"]
-    C["Gmail API<br/>read-only OAuth"]
-  end
-  A --> S
-  B --> S
-  C --> S
-  S["InboxSource<br/>one interface for every inbox"] --> P1
-
+flowchart LR
+  IN["📥 Inbox<br/>sample · Gmail"] --> P1
   subgraph P["⚙️ Pipeline, per email"]
-    direction TB
-    P1["1 · Classify<br/>Claude + rule engine, cross-checked"]
-    P2["2 · Read attachments<br/>txt, xlsx, docx, pdf · Claude vision for scans"]
-    P3["3 · Extract 7 fields<br/>label synonyms, blanks treated as missing"]
-    P4["4 · Compare<br/>deterministic code · SI is the reference"]
-    P5["5 · Decide<br/>OK · MISMATCH · NEEDS_REVIEW + reason"]
-    P6["6 · Triage<br/>priority, next action, draft reply"]
-    P1 --> P2 --> P3 --> P4 --> P5 --> P6
+    direction LR
+    P1["Classify<br/>Claude + rules"] --> P2["Read<br/>docs + vision"] --> P3["Extract<br/>7 fields"] --> P4["Compare<br/>plain code"] --> P5["Decide<br/>+ draft reply"]
   end
-
-  P6 --> D[("Store<br/>Postgres or JSON")]
-  D --> UI["Next.js app<br/>Dashboard · Map · Email · Report"]
-  UI -- "human review / correction" --> R["Recompute<br/>same rules"]
-  R --> D
-  D --> E["submission.json<br/>POST /submit"]
+  P5 --> UI["🖥️ App + store<br/>dashboard · report"]
+  UI -. "human review" .-> P4
 ```
 
 - **Pipeline** (`lib/pipeline/`) — pure TypeScript, no framework dependency. It
