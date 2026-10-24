@@ -1,0 +1,328 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tveris: a paper-and-ink operations desk.
+
+   White paper, hairline borders, square corners, one accent blue for things
+   you can act on. Colour is never decoration: green, red and amber only ever
+   mean "matches", "differs" and "a person must look", so a red pixel on the
+   map is always a discrepancy.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-narrow: var(--font-narrow);
+  --font-mono: var(--font-mono);
+
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--line);
+  --color-border-strong: var(--line-strong);
+  --color-muted-foreground: var(--muted);
+  --color-primary: var(--accent-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-ok: var(--signal-ok);
+  --color-bad: var(--signal-bad);
+  --color-warn: var(--signal-warn);
+  --color-quiet: var(--signal-quiet);
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+
+:root {
+  --paper: #f7f7f5;
+  --ink: #0b1b28;
+  --card: #ffffff;
+  --surface: #f3f3f3;
+  --surface-2: #e6e6e4;
+  --line: rgb(0 0 0 / 12%);
+  --line-strong: rgb(0 0 0 / 30%);
+  --muted: #5a6b7e;
+
+  /* One blue. Raw accent for graphics and rings; the deeper steps carry
+     white text and blue text with AA contrast. */
+  --accent: #0e76ff;
+  --accent-strong: #0b60d8;
+  --accent-ink: #0a5ccc;
+
+  --signal-ok: #0e7a4b;
+  --signal-bad: #ce2c2c;
+  --signal-warn: #8a5600;
+  --signal-quiet: #5a6b7e;
+
+  /* The red brand swoosh over the T. */
+  --brand-red: #e3261c;
+
+  /* Landing palette: warm paper and saffron, the colours of the desk this
+     product serves. Used by the landing page only; the app keeps its own. */
+  --saffron: #ffc300;
+  --saffron-deep: #3d2e00;
+  --saffron-mid: #5c4700;
+  --paper-warm: #faf9f5;
+  --paper-warm-2: #f2f0e9;
+  --stone: #eae8e1;
+  --hairline-warm: #dcd9d0;
+  --ink-deep: #111110;
+  --ink-2: #5c5a54;
+  --ink-3: #8a877e;
+  --sea-deep: #0a1f2c;
+
+  /* The single ink every graph edge is drawn in. */
+  --hairline: #0b1b28;
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+  html {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  ::selection {
+    background: rgb(14 118 255 / 18%);
+  }
+}
+
+/* Uppercase micro-labels: eyebrows, chips, buttons. */
+.xv-micro {
+  font-family: var(--font-narrow), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 1.04px;
+  text-transform: uppercase;
+}
+.xv-micro-sm {
+  font-size: 11px;
+  line-height: 15px;
+  letter-spacing: 0.88px;
+}
+
+/* Dot-grid paper under the graph. */
+.xv-dotgrid {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgb(0 0 0 / 7%) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.xv-focus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A node growing out of its parent. */
+@keyframes xv-pop {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+.xv-node {
+  animation: xv-pop 240ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes xv-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.xv-live {
+  animation: xv-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xv-node,
+  .xv-live {
+    animation: none;
+  }
+}
+
+@media print {
+  .xv-no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The landing page: warm paper, saffron, and a ship that keeps sailing.
+--------------------------------------------------------------------------- */
+.xv-landing {
+  background: var(--paper-warm);
+  color: var(--ink-deep);
+}
+
+.xv-scene {
+  background: var(--paper-warm);
+}
+
+@keyframes xv-sail {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-400px, 0, 0);
+  }
+}
+
+@keyframes xv-bob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.35deg);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0) rotate(0.35deg);
+  }
+}
+
+@keyframes xv-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-1200px, 0, 0);
+  }
+}
+
+@keyframes xv-foam {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.45;
+    transform: translate3d(-6px, 2px, 0);
+  }
+}
+
+.xv-wave-back {
+  animation: xv-sail 13s linear infinite;
+}
+.xv-wave-mid {
+  animation: xv-sail 9s linear infinite;
+}
+.xv-wave-front {
+  animation: xv-sail 6s linear infinite;
+}
+.xv-bob {
+  animation: xv-bob 6.5s ease-in-out infinite;
+  transform-origin: 640px 400px;
+}
+.xv-drift-slow {
+  animation: xv-drift 90s linear infinite;
+}
+.xv-drift-port {
+  animation: xv-drift 60s linear infinite;
+}
+.xv-drift-far {
+  animation: xv-drift 120s linear infinite;
+}
+.xv-foam {
+  animation: xv-foam 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xv-wave-back,
+  .xv-wave-mid,
+  .xv-wave-front,
+  .xv-bob,
+  .xv-drift-slow,
+  .xv-drift-port,
+  .xv-drift-far,
+  .xv-foam {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The landing footer: a deep ground the paper dissolves into, dashed guides,
+   and the wordmark cropped by the page's bottom edge.
+--------------------------------------------------------------------------- */
+.xv-footer-ground {
+  background:
+    linear-gradient(
+      180deg,
+      var(--paper-warm) 0%,
+      rgb(250 249 245 / 62%) 26%,
+      rgb(250 249 245 / 24%) 60%,
+      rgb(250 249 245 / 0%) 100%
+    ),
+    linear-gradient(180deg, #0b1b28 0%, #04122b 46%, #020c1c 100%);
+  background-size:
+    100% 110px,
+    auto;
+  background-repeat: no-repeat;
+}
+
+/* A dashed rule, the page's structural furniture. */
+.xv-hr-dark {
+  height: 1px;
+  width: 100%;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgb(243 243 243 / 18%) 0 4px,
+    transparent 4px 9px
+  );
+}
+.xv-vr-dark {
+  width: 1px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(243 243 243 / 14%) 0 4px,
+    transparent 4px 9px
+  );
+}
+
+/* The wordmark ramps out of focus as it meets the bottom edge. */
+.xv-bottom-blur {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: clamp(72px, 9vw, 132px);
+  z-index: 40;
+  pointer-events: none;
+}
+.xv-bottom-blur > span {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.xv-bottom-blur > span:nth-child(1) {
+  backdrop-filter: blur(1px);
+  mask-image: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%);
+}
+.xv-bottom-blur > span:nth-child(2) {
+  backdrop-filter: blur(2px);
+  mask-image: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%);
+}
+.xv-bottom-blur > span:nth-child(3) {
+  backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, transparent 75%, #000 87.5%, #000 100%);
+}
+.xv-bottom-blur > span:nth-child(4) {
+  backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to bottom, transparent 87.5%, #000 100%);
+}
