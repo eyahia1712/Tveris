@@ -21,7 +21,7 @@ Built by **The Minions** for the **Agentic AI Cybersecurity Hackathon 2026** (GD
 | | Link |
 |---|---|
 | 🌐 **Live prototype** | **[tveris.vercel.app](https://tveris.vercel.app/)** |
-| 🎬 **Demo video** | ⏳ *Coming soon* |
+| 🎬 **Demo video** | **[Watch the 4-minute demo](https://drive.google.com/file/d/1SuVnMLXSn04KyPR9mER1E03WvROm-Ylz/view?usp=sharing)** |
 | 📊 **Pitch deck** | **[Tveris pitch deck](https://drive.google.com/file/d/18y9LU-i80YR_PR2jDqw60Zt3XdGr9J4y/view?usp=sharing)** |
 | 📄 **Proposal** | **[Tveris proposal (PDF)](https://drive.google.com/file/d/1Z9SrbPA3f2DU4nYg6dwcv0cZ762I4Olj/view?usp=sharing)** |
 | 💻 **Source code** | **[github.com/eyahia1712/Tveris](https://github.com/eyahia1712/Tveris)** |
