@@ -20,9 +20,10 @@ Built by **The Minions** for the **Agentic AI Cybersecurity Hackathon 2026** (GD
 
 | | Link |
 |---|---|
-| 🌐 **Live prototype** | **[LIVE LINK — TO ADD]** |
-| 🎬 **Demo video** | **[DEMO VIDEO LINK — TO ADD]** |
-| 📄 **Slide deck / documentation** | **[SLIDE DECK LINK — TO ADD]** |
+| 🌐 **Live prototype** | **[tveris.vercel.app](https://tveris.vercel.app/)** |
+| 🎬 **Demo video** | ⏳ *Coming soon* |
+| 📊 **Pitch deck** | **[Tveris pitch deck](https://drive.google.com/file/d/18y9LU-i80YR_PR2jDqw60Zt3XdGr9J4y/view?usp=sharing)** |
+| 📄 **Proposal** | **[Tveris proposal (PDF)](https://drive.google.com/file/d/1Z9SrbPA3f2DU4nYg6dwcv0cZ762I4Olj/view?usp=sharing)** |
 | 💻 **Source code** | **[github.com/eyahia1712/Tveris](https://github.com/eyahia1712/Tveris)** |
 | ⚡ **Run it yourself** | **[Four commands](#-run-it)** |
 
@@ -434,8 +435,8 @@ tested and deployed for the Agentic AI Cybersecurity Hackathon 2026.
 
 ## 📚 Documentation
 
-- **[Full project documentation (PDF) — LINK TO ADD]** — technical
-  architecture with diagrams, implementation details, challenges faced, future roadmap
+- **[Tveris proposal (PDF)](https://drive.google.com/file/d/1Z9SrbPA3f2DU4nYg6dwcv0cZ762I4Olj/view?usp=sharing)** — problem, agent
+  workflow, tools, data, safeguards and the blockchain roadmap
 - **`/docs`** in the running app — architecture, how to run it, self-evaluation
 - **`.env.example`** — every environment variable, with what it switches on
 - **`lib/pipeline/pipeline.test.ts`** — the checker's behaviour, stated as tests
