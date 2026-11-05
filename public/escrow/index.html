@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tveris · Trade escrow on BNB Chain</title>
+<meta name="description" content="Tveris holds the importer's payment on BNB Chain until the documents and the container check out.">
+<link rel="icon" href="/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f7f7f5;--paper-warm:#faf9f5;--ink:#0b1b28;--card:#fff;--surface:#f1f0ec;
+  --line:rgb(11 27 40/12%);--line-strong:rgb(11 27 40/28%);--muted:#5a6b7e;
+  --accent:#0e76ff;--ok:#0e7a4b;--ok-bg:#e6f4ec;--bad:#ce2c2c;--bad-bg:#fbeaea;--warn:#8a5600;
+  --saffron:#ffc300;--saffron-soft:#fff3c4;--saffron-deep:#3d2e00;
+  --mono:"Geist Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0c1117;--paper-warm:#0f151c;--ink:#e9edf1;--card:#121a23;--surface:#18212c;
+  --line:rgb(255 255 255/11%);--line-strong:rgb(255 255 255/26%);--muted:#93a3b4;
+  --ok:#3fbf86;--ok-bg:rgb(63 191 134/12%);--bad:#ff6b6b;--bad-bg:rgb(255 107 107/12%);--warn:#e8b04d;
+  --saffron-soft:rgb(255 195 0/14%);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;cursor:pointer;color:inherit}
+.mono{font-family:var(--mono)}
+.k{font:600 11.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+[hidden]{display:none!important}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .in{max-width:1180px;margin:0 auto;padding:0 18px;height:66px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font:italic 800 24px/1 Archivo;letter-spacing:-.02em}
+.logo img{width:30px;height:30px}
+.tagline{color:var(--muted);font-size:14px}
+@media (max-width:900px){.tagline{display:none}}
+.right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.about{font:600 14px Archivo;color:var(--muted);text-decoration:none;padding:6px 8px}
+.about:hover{color:var(--ink)}
+@media (max-width:640px){.about{display:none}}
+
+/* role switch */
+.switch{display:flex;border:1.5px solid var(--ink);background:var(--card);padding:3px;gap:3px}
+.role{position:relative;display:flex;align-items:center;gap:9px;border:0;background:transparent;padding:6px 12px 6px 6px;font-weight:700;font-size:14px}
+.role .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 13px Archivo}
+.role small{display:block;font:500 11px var(--mono);color:var(--muted);text-align:left;line-height:1.1}
+.role span{text-align:left;line-height:1.15}
+.role[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.role[aria-pressed="true"] small{color:color-mix(in srgb,var(--paper) 70%,transparent)}
+.av.d{background:var(--ink);color:var(--paper);border:2px solid var(--paper)}
+.av.a{background:var(--saffron);color:var(--saffron-deep)}
+.ping{position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#e3261c;border:2px solid var(--card);display:none}
+.ping.on{display:block;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.35)}}
+@media (max-width:520px){.role small{display:none}.role{padding:5px 9px 5px 5px}}
+
+/* layout */
+.page{max-width:1120px;margin:0 auto;padding:20px 18px 50px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+@media (max-width:980px){.page{grid-template-columns:1fr}}
+.hello{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.hello .big{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:800 17px Archivo}
+.hello h1{margin:0;font-size:21px;letter-spacing:-.02em;line-height:1.1}
+.hello p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.panel{background:var(--card);border:1.5px solid var(--ink);margin-bottom:14px}
+.panel .ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.panel .ph h2{margin:0;font-size:15px}
+.panel .pb{padding:14px}
+.soft{border-color:var(--line)}
+
+/* profile */
+.profile{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+@media (max-width:720px){.profile{grid-template-columns:1fr 1fr}}
+.profile div{padding:9px 14px;border-right:1px solid var(--line)}
+.profile div:last-child{border-right:0}
+.profile b{display:block;font-size:13px;margin-top:3px;word-break:break-word;font-weight:600}
+.verified{display:inline-flex;align-items:center;gap:5px;font:600 11.5px var(--mono);color:var(--ok)}
+
+/* products */
+.products{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:620px){.products{grid-template-columns:1fr}}
+.product{text-align:left;border:1.5px solid var(--line);background:var(--card);padding:8px;display:flex;flex-direction:column;gap:6px;transition:border-color .12s,box-shadow .12s}
+.product:hover{border-color:var(--line-strong)}
+.product[aria-pressed="true"]{border-color:var(--ink);box-shadow:4px 4px 0 var(--saffron)}
+.pic{width:100%;height:96px;display:grid;place-items:center;background:#fff;border:1px solid var(--line);color:var(--ink);overflow:hidden}
+.pic img{width:100%;height:100%;object-fit:cover;display:block}
+.pic.contain img{object-fit:contain;padding:4px}
+.product b{font-size:13.5px;line-height:1.25}
+.product span{font-size:12px;color:var(--muted)}
+.product strong{font:800 15px Archivo}
+
+/* form */
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+@media (max-width:620px){.form{grid-template-columns:1fr}}
+.field label{display:block;margin-bottom:6px}
+.field .val{border:1px solid var(--line);background:var(--paper-warm);padding:7px 10px;font-size:13.5px;min-height:36px}
+.field .val small{display:block;color:var(--muted);font-size:12.5px}
+.field.wide{grid-column:1/-1}
+.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:10px 16px;font:700 14px Archivo;text-decoration:none;transition:transform .12s,box-shadow .12s}
+.btn:hover:not([disabled]){transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--saffron)}
+.btn.yellow{background:var(--saffron);border-color:var(--saffron-deep);color:var(--saffron-deep)}
+.btn.yellow:hover:not([disabled]){box-shadow:4px 4px 0 var(--ink)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.good{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.full{width:100%}
+.btn.lg{font-size:15px;padding:12px 18px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.link{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:14px;padding:0}
+
+/* item summary */
+.itemrow{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center}
+.itemrow .pic{width:56px;height:56px;aspect-ratio:auto}
+.itemrow b{display:block;font-size:14.5px}
+.itemrow span{font-size:12.5px;color:var(--muted)}
+.itemrow strong{font:800 18px Archivo;white-space:nowrap}
+
+/* status banners */
+.banner{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1.5px solid}
+.banner .ic{font-size:22px;line-height:1}
+.banner h3{margin:0;font-size:16px;letter-spacing:-.01em}
+.banner p{margin:3px 0 0;font-size:13.5px;color:var(--muted)}
+.banner.wait{border-color:var(--line-strong);background:var(--paper-warm)}
+.banner.lock{border-color:var(--saffron-deep);background:var(--saffron-soft)}
+.banner.good{border-color:var(--ok);background:var(--ok-bg)}.banner.good h3{color:var(--ok)}
+.banner.bad{border-color:var(--bad);background:var(--bad-bg)}.banner.bad h3{color:var(--bad)}
+.count{font:700 14px var(--mono);padding:3px 8px;background:var(--card);border:1px solid var(--line);margin-left:auto;white-space:nowrap}
+
+.share{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.share code{flex:1;min-width:200px;font:500 13.5px var(--mono);border:1px dashed var(--line-strong);padding:10px 12px;background:var(--paper-warm)}
+.chipbtn{border:1px solid var(--line);background:var(--card);padding:9px 12px;font-size:13.5px;font-weight:600}
+
+.protect{list-style:none;margin:16px 0 0;padding:14px 16px;border:1px solid var(--saffron-deep);background:var(--saffron-soft)}
+.protect li{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-size:14.5px}
+.protect li::before{content:"✓";font-weight:800;color:var(--saffron-deep)}
+@media (prefers-color-scheme:dark){.protect li::before{color:var(--saffron)}}
+
+.track{list-style:none;margin:16px 0 0;padding:0}
+.track li{display:grid;grid-template-columns:16px 1fr;gap:12px;padding:0 0 12px;position:relative;font-size:14.5px}
+.track li::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--ink);margin-top:5px}
+.track li.first::before{background:var(--saffron);box-shadow:0 0 0 4px var(--saffron-soft)}
+.track li:not(:last-child)::after{content:"";position:absolute;left:5px;top:16px;bottom:0;border-left:1.5px solid var(--line-strong)}
+.track small{display:block;color:var(--muted);font:12px var(--mono)}
+
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+@media (max-width:560px){.choices{grid-template-columns:1fr}}
+.reasons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.reason{border:1.5px solid var(--line);background:var(--card);padding:9px 12px;font-size:14px;font-weight:600}
+.reason[aria-pressed="true"]{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+.photos{display:flex;gap:8px;margin-top:12px;align-items:center;color:var(--muted);font-size:13px}
+.photos span.ph{width:54px;height:54px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font-size:22px}
+
+.cheat{margin-top:16px;border-top:1px dashed var(--line-strong);padding-top:14px}
+.cheat .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cheat button{border:1px dashed var(--bad);background:transparent;color:var(--bad);padding:8px 12px;font-size:13.5px;font-weight:600}
+
+.empty{text-align:center;padding:36px 18px;color:var(--muted)}
+.empty .ic{font-size:40px}
+.empty h3{color:var(--ink);margin:10px 0 4px}
+
+.field input{width:100%;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:8px 10px;font:500 14px Archivo;border-radius:0}
+.field input:focus{outline:2px solid var(--saffron);outline-offset:0;border-color:var(--saffron-deep)}
+.field .hint{display:block;color:var(--muted);font-size:11.5px;margin-top:4px}
+.field .pre{position:relative}
+.field .pre span{position:absolute;left:10px;top:50%;transform:translateY(-50%);font:600 13px Archivo;color:var(--muted)}
+.field .pre input{padding-left:38px}
+.field .post input{padding-right:34px}
+.field .pre.post input{padding-left:10px}
+.field .post span{left:auto;right:10px}
+.grid3f{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+@media (max-width:620px){.grid3f{grid-template-columns:1fr}}
+.sec{margin-top:16px}
+.strip{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid;font-size:13.5px;margin-bottom:12px}
+.strip.good{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.strip.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.strip a{margin-left:auto;font:500 12px var(--mono);color:var(--accent)}
+.protect{padding:10px 12px!important}
+.protect li{font-size:13.5px!important;padding:3px 0!important}
+/* identity card */
+.idcard{position:relative;height:300px;border-radius:18px;overflow:hidden;background:#0d1411;color:#eef2ef;border:1px solid rgb(255 255 255/14%);box-shadow:0 18px 40px -22px rgb(0 0 0/60%);margin-bottom:14px;isolation:isolate}
+.idcard .photo{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:center 22%}
+.idcard::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgb(8 12 10/72%) 0%,rgb(8 12 10/10%) 38%,rgb(8 12 10/35%) 58%,rgb(8 12 10/94%) 100%)}
+.idcard .in{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column}
+.idcard .head{display:flex;justify-content:space-between;align-items:flex-start}
+.idcard .brand{font:500 11.5px/1.35 var(--mono);letter-spacing:.16em;text-transform:uppercase;opacity:.9}
+.idcard .stat{text-align:right}
+.idcard .stat b{display:block;font:800 30px/1 Archivo;letter-spacing:-.02em}
+.idcard .stat span{font:500 10.5px var(--mono);letter-spacing:.14em;opacity:.8}
+.idcard .name{margin:10px 0 0;font:800 26px/1.05 Archivo;letter-spacing:-.02em;text-shadow:0 2px 12px rgb(0 0 0/50%)}
+.idcard .foot{margin-top:auto}
+.idcard .role{all:unset;display:block;font:600 12.5px var(--mono);letter-spacing:.16em;color:var(--saffron);margin-bottom:8px}
+.idcard .tags{display:flex;gap:6px;flex-wrap:wrap}
+.idcard .tags span{font:500 11px var(--mono);letter-spacing:.08em;padding:4px 9px;border:1px solid rgb(255 255 255/28%);border-radius:999px;background:rgb(0 0 0/30%);backdrop-filter:blur(4px)}
+.idcard .tags span.ok{border-color:#5fd39a;color:#7fe3b0}
+.idcard .line{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid rgb(255 255 255/18%);font:500 11.5px var(--mono);letter-spacing:.1em}
+.idcard .line b{font-weight:600;color:#fff;letter-spacing:.08em}
+.idcard .copy{all:unset;cursor:pointer;opacity:.75;font:500 10.5px var(--mono)}
+.idcard .copy:hover{opacity:1}
+/* tracker */
+.side{position:sticky;top:84px}
+@media (max-width:980px){.side{position:static}}
+.steps{list-style:none;margin:0;padding:6px 18px 10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:10px 0;position:relative}
+.steps li:not(:last-child)::after{content:"";position:absolute;left:13px;top:38px;bottom:-4px;border-left:2px solid var(--line)}
+.steps li.done:not(:last-child)::after{border-left-color:var(--ink)}
+.dotc{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-strong);background:var(--card);font:700 12px var(--mono);color:var(--muted);z-index:1}
+.steps li.done .dotc{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.steps li.now .dotc{background:var(--saffron);border-color:var(--saffron-deep);color:var(--saffron-deep);box-shadow:0 0 0 5px var(--saffron-soft)}
+.steps li.fail .dotc{background:var(--bad);border-color:var(--bad);color:#fff}
+.steps b{display:block;font-size:14.5px}
+.steps small{display:block;color:var(--muted);font-size:12.5px}
+.steps a{font:500 12px var(--mono);color:var(--accent)}
+.agentbox{border-top:1px solid var(--line);padding:14px 18px;background:var(--paper-warm)}
+.agentbox .who{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.agentbox .who img{width:22px;height:22px}
+.agentbox p{margin:0;font-size:14px}
+.checks{list-style:none;margin:10px 0 0;padding:0}
+.checks li{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:4px 0}
+.mk{width:18px;height:18px;display:grid;place-items:center;border:1.5px dashed var(--line-strong);flex:none;font-size:11px;font-weight:800}
+.mk.ok{background:var(--ok);border:0;color:#fff}.mk.bad{background:var(--bad);border:0;color:#fff}
+.checks li.bad{color:var(--bad);font-weight:600}
+details.tech{border-top:1px solid var(--line);padding:12px 18px}
+details.tech summary{cursor:pointer;font:600 12.5px var(--mono);color:var(--muted)}
+.feed{margin-top:10px;max-height:260px;overflow:auto;font-size:12.5px}
+.feed div{padding:5px 0;border-bottom:1px solid var(--line)}
+.feed .a{font:600 10.5px var(--mono);text-transform:uppercase;margin-right:6px}
+.a.agent{color:var(--accent)}.a.chain{color:var(--saffron-deep)}.a.buyer{color:var(--ok)}.a.seller{color:var(--muted)}
+@media (prefers-color-scheme:dark){.a.chain{color:var(--saffron)}}
+.wallets{margin-top:10px;font-size:12.5px}
+.wallets div{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+.wallets a{font:500 12px var(--mono);color:var(--accent)}
+.setup{border:1.5px solid var(--saffron-deep);background:var(--saffron-soft);padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.setup p{margin:3px 0 0;font-size:13.5px;color:var(--muted)}
+.setup code{font:12px var(--mono);word-break:break-all}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 16px;font-size:14px;z-index:50;max-width:min(92vw,560px);display:none}
+.fade{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<body>
+<header class="top">
+  <div class="in">
+    <a class="logo" href="/dashboard"><img src="/icon.svg" alt="">Tveris</a>
+    <span class="tagline">Trade escrow for containers · BNB Chain</span>
+    <div class="right">
+      <a class="about" href="/dashboard">← Dashboard</a>
+      <div class="switch" role="group" aria-label="Switch user">
+        <button class="role" data-role="seller" aria-pressed="true"><span class="av a">A</span><span>Aina<small>Exporter</small></span><i class="ping" id="pingSeller"></i></button>
+        <button class="role" data-role="buyer" aria-pressed="false"><span class="av d">D</span><span>Daniel<small>Importer</small></span><i class="ping" id="pingBuyer"></i></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <main><div id="main"></div><div id="history"></div></main>
+  <aside class="side">
+    <div id="idcard"></div>
+    <div class="setup" id="setup" hidden><div><b id="setupTitle">Setup</b><p id="setupText"></p></div><button class="btn" id="setupBtn">Set up</button></div>
+    <div class="panel">
+      <div class="ph"><h2>Deal tracker</h2><span class="k" id="dealNo">no deal</span></div>
+      <ol class="steps" id="steps"></ol>
+      <div class="agentbox">
+        <div class="who"><img src="/escrow/img/bnb.svg" alt=""><b>Tveris × BNB Chain</b><span class="k" id="agentId"></span></div>
+        <p id="agentSays">Waiting for a deal.</p>
+        <ul class="checks" id="checks"></ul>
+      </div>
+      <details class="tech">
+        <summary>Technical details</summary>
+        <div class="feed" id="feed"></div>
+        <div class="wallets" id="wallets"></div>
+      </details>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =====================================================================
+   Tveris trade escrow on BNB Smart Chain testnet. Every money step is a
+   real transaction, sent by the Tveris server and confirmed before the page
+   moves on: the importer funds the escrow, the agent records the shipment
+   and signs the release or refund with the hash of its verdict.
+   ===================================================================== */
+const SHIP_WINDOW_S = 300, INSPECT_S = 60, STEP_S = 2.4;
+const SELLER = { uid: "TVR-7Q4K-AN", name: "Aina Rahman", company: "Kampar Paper Mills Sdn Bhd", address: "Lot 7, Westport Industrial Park", postcode: "MYPKG", city: "Port Klang", phone: "+60 12-345 6789" };
+const BUYER = { uid: "TVR-2X9P-DL", name: "Daniel Lim", company: "Indus Trading Co.", address: "Plot 14, West Wharf", postcode: "PKKHI", city: "Karachi", phone: "+92 21-3245 1180" };
+const LISTINGS = [
+  { id: "coated", title: "Coated paper, 6 × 40'HC", subtitle: "OC 5ALT-01226 · Port Klang → Karachi", priceRm: 48600, weightKg: 131058, icon: "box6" },
+  { id: "copier", title: "A4 copier paper, 4 × 40'HC", subtitle: "OC 5RSG-00133 · Port Klang → Karachi", priceRm: 31200, weightKg: 88400, icon: "box4" },
+  { id: "kraft", title: "Kraft liner, 2 × 20'GP", subtitle: "OC 5SUS-86999 · Port Klang → Karachi", priceRm: 14900, weightKg: 42100, icon: "box2" },
+];
+const STORE = "tveris-escrow-v1";
+let chain = null; // escrow, wallets and balances from /api/escrow
+let db = { deals: [] };
+try { const saved = JSON.parse(localStorage.getItem(STORE) || "null"); if (saved && Array.isArray(saved.deals)) db = saved; } catch (e) {}
+const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(db)); } catch (e) {} };
+const now = () => Date.now();
+const rand = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join("");
+
+async function server(body) {
+  const res = await fetch("/api/escrow", body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+}
+function log(d, actor, text) { d.log.push({ at: new Date().toISOString(), actor, text }); }
+function tx(d, label, hash, by) { d.txs.push({ label, hash, by, at: new Date().toISOString() }); log(d, "chain", label + " · tx " + hash.slice(0, 10) + "… confirmed on BNB Chain"); }
+function pending(d) {
+  const b = d.buyerInfo;
+  return [
+    { id: "shipped", label: "Container loaded before the deadline", actual: "waiting", ok: null },
+    { id: "docs", label: "Draft BL matches the SI (Tveris check)", actual: "—", ok: null },
+    { id: "real", label: "Container number exists at the carrier", actual: "—", ok: null },
+    { id: "postcode", label: "Going to the importer's port", actual: "—", ok: null, expected: b.postcode + " " + b.city },
+    { id: "recipient", label: "Consigned to the importer", actual: "—", ok: null, expected: b.company },
+    { id: "weight", label: "Gross weight matches the SI", actual: "—", ok: null },
+    { id: "delivered", label: "Carrier confirms delivery", actual: "—", ok: null },
+  ];
+}
+function setCheck(d, id, actual, ok) { const c = d.checks.find((x) => x.id === id); c.actual = actual; c.ok = ok; }
+
+async function settle(d, decision, reason) {
+  if (d.settling) return;
+  d.settling = true;
+  const verdict = { deal: d.chainId, escrow: chain.escrow, decision, reason, checks: d.checks.map(({ id, actual, ok }) => ({ id, actual, ok })), listingHash: d.listingHash, at: new Date().toISOString() };
+  try {
+    const r = await server({ action: "settle", dealId: d.chainId, decision, verdict });
+    d.verdict = { decision, reason, hash: r.verdictHash };
+    tx(d, decision === "RELEASE" ? "Release to the exporter (verdict hash stored)" : "Refund to the importer (verdict hash stored)", r.hash, "agent");
+    d.status = decision === "RELEASE" ? "RELEASED" : "REFUNDED";
+    d.brief = decision === "RELEASE"
+      ? "The documents matched the SI and the container reached " + d.buyerInfo.company + " in " + d.buyerInfo.city + " with the declared weight, so Tveris paid Aina. The verdict's hash is stored on BNB Chain with the payout."
+      : reason;
+    d.doneAt = now();
+    log(d, "agent", d.brief);
+  } catch (e) {
+    log(d, "agent", "Settlement failed: " + e.message);
+    toast(e.message, 6000);
+  }
+  d.settling = false;
+  persist();
+}
+
+const api = {
+  state() {
+    tick();
+    return { seller: SELLER, buyer: BUYER, listings: LISTINGS, deals: db.deals.slice().reverse(), chain };
+  },
+  requests(body) {
+    const l = LISTINGS.find((x) => x.id === body.listing);
+    const listing = { ...l, title: body.title || l.title, priceRm: body.priceRm || l.priceRm, weightKg: body.weightKg || l.weightKg };
+    const d = { key: rand(), chainId: null, status: "REQUESTED", listing, buyerInfo: { ...BUYER, ...body.buyer, company: body.buyer.name || BUYER.company }, createdAt: now(), shipBy: 0, shipment: null, tracking: [], checks: [], verdict: null, brief: null, txs: [], log: [] };
+    d.checks = pending(d);
+    log(d, "seller", "Created a payment request of USD " + listing.priceRm.toLocaleString("en") + " for " + listing.title + ", addressed to " + d.buyerInfo.uid + ".");
+    log(d, "agent", "Request linked to the shipping instruction (" + listing.subtitle.split(" · ")[0] + "). Waiting for the importer to pay into escrow.");
+    db.deals.push(d);
+    persist();
+    return { key: d.key };
+  },
+  async pay(d) {
+    const listing = { title: d.listing.title, oc: d.listing.subtitle.split(" · ")[0], priceUsd: d.listing.priceRm, weightKg: d.listing.weightKg, seller: SELLER.company, buyer: d.buyerInfo.company, port: d.buyerInfo.postcode };
+    const r = await server({ action: "fund", listing, shipBySeconds: SHIP_WINDOW_S });
+    d.chainId = r.dealId;
+    d.listingHash = r.listingHash;
+    d.status = "FUNDED";
+    d.shipBy = now() + SHIP_WINDOW_S * 1000;
+    tx(d, "Escrow funded by the importer (deal #" + r.dealId + ")", r.hash, "buyer");
+    log(d, "agent", "The payment is locked in the escrow contract. Nobody can move it except to pay Aina or refund Daniel. Aina must load the container within " + SHIP_WINDOW_S / 60 + " minutes.");
+    persist();
+  },
+  async ship(d, mode) {
+    const fake = mode === "fake";
+    const shipment = { tracking: "TGHU 482190-3", carrier: "Straits Line", vessel: "MV Straits Harmony", seal: "ML-8841207", createdAt: now(),
+      consignee: fake ? "GOLDEN GATE LOGISTICS FZE" : d.buyerInfo.company, destPostcode: fake ? "AEJEA" : d.buyerInfo.postcode, destCity: fake ? "Jebel Ali" : d.buyerInfo.city, weightKg: d.listing.weightKg };
+    const r = await server({ action: "ship", dealId: d.chainId, shipment });
+    d.shipment = shipment;
+    d.shippingHash = r.shippingHash;
+    tx(d, "Shipment recorded: container " + shipment.tracking + " on " + shipment.vessel, r.hash, "agent");
+    log(d, "seller", fake ? "Submitted the draft BL and loaded the container (consignee edited on the BL)." : "Submitted the SI and draft BL, and loaded the container.");
+    log(d, "agent", "Observe: read the SI and the draft BL. Tool: PDF reader for each. Now comparing the 7 fields and following the container.");
+    setCheck(d, "shipped", shipment.tracking, true);
+    d.status = "SHIPPED";
+    d.step = 0;
+    d.nextStepAt = now() + STEP_S * 1000;
+    persist();
+  },
+  confirm(d) { log(d, "buyer", "Goods received in good condition."); return settle(d, "RELEASE", "The importer confirmed the goods."); },
+  dispute(d, reason) { log(d, "buyer", "Reported a problem: " + reason + " (2 photos attached)."); return settle(d, "REFUND", "Daniel reported \"" + reason + "\" within the inspection window, so Tveris refunded him in full."); },
+  cancel(d) { d.status = "CANCELLED"; persist(); },
+};
+
+const JOURNEY = [
+  (d) => {
+    const bad = d.shipment.consignee !== d.buyerInfo.company;
+    setCheck(d, "docs", bad ? "Consignee on BL: " + d.shipment.consignee : "all 7 fields match", !bad);
+    if (bad) { log(d, "agent", "✗ Decide: MISMATCH. The draft BL names " + d.shipment.consignee + " as consignee, but the SI says " + d.buyerInfo.company + "."); return "stop"; }
+    log(d, "agent", "✓ Decide: all 7 fields on the draft BL match the SI.");
+  },
+  (d) => { setCheck(d, "real", d.shipment.carrier, true); d.tracking.push({ text: "Gate-in at Port Klang, container " + d.shipment.tracking, at: new Date().toISOString() }); log(d, "agent", "✓ Container " + d.shipment.tracking + " found at " + d.shipment.carrier + "."); },
+  (d) => { setCheck(d, "weight", d.shipment.weightKg.toLocaleString("en") + " kg", true); d.tracking.push({ text: "Loaded on " + d.shipment.vessel + ", seal " + d.shipment.seal, at: new Date().toISOString() }); log(d, "agent", "✓ Gross weight matches the SI."); },
+  (d) => { d.tracking.push({ text: "Departed Port Klang, bound for " + d.shipment.destCity, at: new Date().toISOString() }); },
+  (d) => {
+    const ok = d.shipment.destPostcode === d.buyerInfo.postcode;
+    setCheck(d, "postcode", d.shipment.destPostcode + " " + d.shipment.destCity, ok);
+    d.tracking.push({ text: "Discharged at " + d.shipment.destCity + " (" + d.shipment.destPostcode + ")", at: new Date().toISOString() });
+    if (!ok) { log(d, "agent", "✗ The container was discharged at " + d.shipment.destCity + ", not " + d.buyerInfo.city + "."); return "stop"; }
+  },
+  (d) => {
+    setCheck(d, "recipient", d.shipment.consignee, true);
+    setCheck(d, "delivered", "DELIVERED", true);
+    d.tracking.push({ text: "Released to " + d.shipment.consignee + ", seal intact", at: new Date().toISOString() });
+    d.status = "DELIVERED";
+    d.inspectUntil = now() + INSPECT_S * 1000;
+    log(d, "agent", "✓ Delivered to " + d.shipment.consignee + " as documented. Daniel has " + INSPECT_S + " seconds to check the goods.");
+  },
+];
+
+function tick() {
+  let changed = false;
+  for (const d of db.deals) {
+    if (d.settling) continue;
+    if (d.status === "FUNDED" && !d.shipment && now() > d.shipBy) {
+      setCheck(d, "shipped", "no container, deadline passed", false);
+      settle(d, "REFUND", "Aina did not load the container before the deadline, so Tveris refunded Daniel in full.");
+      changed = true;
+    }
+    if (d.status === "SHIPPED" && now() >= d.nextStepAt) {
+      const out = JOURNEY[d.step](d);
+      d.step += 1;
+      d.nextStepAt = now() + STEP_S * 1000;
+      changed = true;
+      if (out === "stop") {
+        const docs = d.checks.find((c) => c.id === "docs");
+        const why = docs.ok === false
+          ? "the draft BL names " + d.shipment.consignee + " as consignee, not " + d.buyerInfo.company.replace(/\.$/, "")
+          : "the container was discharged at " + d.shipment.destCity + ", not " + d.buyerInfo.city;
+        d.status = "SETTLING";
+        settle(d, "REFUND", "The shipment does not match the deal: " + why + ". Tveris refunded Daniel in full before any money reached the exporter.");
+      }
+    }
+    if (d.status === "DELIVERED" && now() > d.inspectUntil) {
+      log(d, "agent", "No problem reported within the inspection window.");
+      d.status = "SETTLING";
+      settle(d, "RELEASE", "No problem reported within the inspection window.");
+      changed = true;
+    }
+  }
+  if (changed) persist();
+}
+
+/* =====================================================================
+   The page: Amanah's UI, with Aina as the exporter and Daniel as the importer.
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const short = (h) => (h ? h.slice(0, 6) + "…" + h.slice(-4) : "");
+const rm = (n) => "USD " + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const bnb = (wei) => (Number(wei) / 1e18).toFixed(4) + " tBNB";
+const OPEN = ["REQUESTED", "FUNDING", "FUNDED", "SHIPPED", "DELIVERED", "SETTLING"];
+const box = (n) => '<svg width="58" height="40" viewBox="0 0 58 40" fill="none" stroke="currentColor" stroke-width="1.5">' +
+  Array.from({ length: n }, (_, i) => { const x = 3 + (i % 3) * 18, y = 4 + Math.floor(i / 3) * 17; return '<rect x="' + x + '" y="' + y + '" width="16" height="14" rx="1.5" fill="' + ["#ffc300", "#e3261c", "#2f6fed", "#0e7a4b", "#ffc300", "#e3261c"][i] + '" fill-opacity=".85"/><path d="M' + (x + 4) + " " + (y + 2) + "v10M" + (x + 8) + " " + (y + 2) + "v10M" + (x + 12) + " " + (y + 2) + 'v10" stroke="#0b1b28" stroke-opacity=".35"/>'; }).join("") + "</svg>";
+const ICONS = { box6: box(6), box4: box(4), box2: box(2) };
+
+let state = null;
+let role = (location.hash === "#buyer" || location.hash === "#seller") ? location.hash.slice(1) : "seller";
+let picked = "coated";
+let currentKey = null;
+let working = false;
+let workingText = "";
+let reportOpen = false;
+let reason = "Goods damaged";
+let ignoring = false;
+let lastHtml = "";
+
+function toast(text, ms = 3800) {
+  const el = $("toast");
+  el.textContent = text;
+  el.style.display = "block";
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => (el.style.display = "none"), ms);
+}
+const secsLeft = (t) => Math.max(0, Math.round((t - Date.now()) / 1000));
+const mmss = (s) => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+const EXPLORER = "https://testnet.bscscan.com";
+const txUrl = (h) => EXPLORER + "/tx/" + h;
+const addrUrl = (a) => EXPLORER + "/address/" + a;
+const txLink = (t, text) => '<a href="' + txUrl(t.hash) + '" target="_blank" rel="noopener">' + (text || "tx " + short(t.hash)) + " ↗</a>";
+
+function deal() {
+  if (!state) return null;
+  if (currentKey) return state.deals.find((d) => d.key === currentKey) || null;
+  return state.deals[0] || null;
+}
+function setRole(next) {
+  role = next;
+  history.replaceState(null, "", "#" + role);
+  reportOpen = false;
+  document.querySelectorAll(".role").forEach((b) => b.setAttribute("aria-pressed", b.dataset.role === role));
+  lastHtml = "";
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+async function act(fn, done, busy) {
+  if (working) return;
+  working = true;
+  workingText = busy || "";
+  lastHtml = "";
+  render();
+  try { await fn(); if (done) toast(done); } catch (e) { toast(e.message, 7000); }
+  working = false;
+  workingText = "";
+  load();
+}
+function pic(l) { return '<span class="pic contain">' + (ICONS[l.icon] || "") + "</span>"; }
+function item(l) { return '<div class="itemrow">' + pic(l) + "<div><b>" + esc(l.title) + "</b><span>" + esc(l.subtitle) + "</span></div><strong>" + rm(l.priceRm) + "</strong></div>"; }
+const drafts = {};
+function draftFor(id) {
+  if (!drafts[id]) {
+    const l = state.listings.find((x) => x.id === id);
+    const b = state.buyer;
+    drafts[id] = { uid: b.uid, title: l.title, priceRm: l.priceRm, weightKg: l.weightKg, name: b.company, phone: b.phone, address: b.address, postcode: b.postcode, city: b.city };
+  }
+  return drafts[id];
+}
+function trackList(d) {
+  if (!d.tracking || !d.tracking.length) return "";
+  return '<ul class="track">' + d.tracking.slice().reverse().map((e, i) => '<li class="' + (i === 0 ? "first" : "") + '"><div>' + esc(e.text) + "<small>" + new Date(e.at).toLocaleTimeString("en-MY") + " · " + esc(d.shipment.tracking) + "</small></div></li>").join("") + "</ul>";
+}
+function proof(d) {
+  const t = d.txs[d.txs.length - 1];
+  return t ? '<p style="margin-top:10px"><a class="mono" style="color:var(--accent);font-size:13px" href="' + txUrl(t.hash) + '" target="_blank" rel="noopener">See the proof on BNB Chain ↗</a></p>' : "";
+}
+function banner(kind, icon, title, text, extra = "") {
+  return '<div class="banner ' + kind + '"><span class="ic">' + icon + "</span><div style=\"flex:1\"><h3>" + title + "</h3><p>" + text + "</p>" + extra + "</div></div>";
+}
+function busyBanner() { return working && workingText ? banner("wait", "⛓️", workingText, "Sending the transaction to BNB Smart Chain and waiting for it to be confirmed…") + '<div style="height:12px"></div>' : ""; }
+
+/* ---------------- exporter (Aina) ---------------- */
+function sellerView(d) {
+  let html = "";
+  const open = d && OPEN.includes(d.status);
+  if (!open) {
+    const f = draftFor(picked);
+    html += '<div class="panel"><div class="ph"><h2>New safe-payment request</h2><span class="k">edit anything</span></div><div class="pb">';
+    html += '<span class="k">1 · Choose the shipment</span><div class="products" style="margin-top:8px">' + state.listings.map((x) => '<button class="product" data-pick="' + x.id + '" aria-pressed="' + (x.id === picked) + '">' + pic(x) + "<b>" + esc(x.title) + "</b><strong>" + rm(x.priceRm) + "</strong></button>").join("") + "</div>";
+    html += '<div class="sec"><span class="k">2 · Cargo details</span><div class="form" style="margin-top:8px">' +
+      '<div class="field wide"><label class="k" for="fTitle">Cargo</label><input id="fTitle" data-f="title" value="' + esc(f.title) + '" maxlength="60"></div>' +
+      '<div class="field"><label class="k" for="fPrice">Price</label><div class="pre"><span>USD</span><input id="fPrice" data-f="priceRm" type="number" min="1" step="100" value="' + esc(f.priceRm) + '" style="padding-left:46px"></div><span class="hint">paid as ' + (state.chain ? state.chain.dealValue : "0.001") + ' test BNB on BSC testnet</span></div>' +
+      '<div class="field"><label class="k" for="fWeight">Gross weight</label><div class="pre post"><input id="fWeight" data-f="weightKg" type="number" min="1" step="1" value="' + esc(f.weightKg) + '"><span>kg</span></div><span class="hint">Tveris checks this against the SI and the BL</span></div>' +
+      "</div></div>";
+    html += '<div class="sec"><span class="k">3 · Importer and port of discharge</span><div class="form" style="margin-top:8px">' +
+      '<div class="field"><label class="k" for="fUid">Importer ID</label><input id="fUid" data-f="uid" class="mono" value="' + esc(f.uid) + '" maxlength="11"><span class="hint">the request goes only to this Tveris ID</span></div>' +
+      '<div class="field"><label class="k" for="fName">Consignee (importer company)</label><input id="fName" data-f="name" value="' + esc(f.name) + '" maxlength="40"></div>' +
+      '<div class="field"><label class="k" for="fPhone">Importer phone</label><input id="fPhone" data-f="phone" value="' + esc(f.phone) + '" maxlength="20"></div>' +
+      '<div class="field wide"><div class="grid3f">' +
+        '<div><label class="k" for="fAddr">Delivery address</label><input id="fAddr" data-f="address" value="' + esc(f.address) + '" maxlength="80"></div>' +
+        '<div><label class="k" for="fPost">Port code</label><input id="fPost" data-f="postcode" value="' + esc(f.postcode) + '" maxlength="6"></div>' +
+        '<div><label class="k" for="fCity">Port</label><input id="fCity" data-f="city" value="' + esc(f.city) + '" maxlength="40"></div>' +
+      "</div></div></div></div>";
+    html += '<div class="actions"><button class="btn yellow lg" id="createBtn"' + (working ? " disabled" : "") + '>Create payment request</button><span style="color:var(--muted);font-size:13px">The importer pays Tveris. You are paid after the documents and the container check out.</span></div>';
+    html += "</div></div>";
+    return html;
+  }
+
+  html += '<div class="panel"><div class="ph"><h2>Your sale</h2><span class="k">deal ' + (d.chainId ? "#" + d.chainId : "request") + '</span></div><div class="pb">' + item(d.listing) + '<div style="height:16px"></div>' + busyBanner();
+  if (d.status === "REQUESTED") {
+    html += banner("wait", "📨", "Request sent to Daniel · " + esc(d.buyerInfo.uid), "Only this Tveris ID can pay it. Waiting for him to pay. Share this link with the importer:",
+      '<div class="share"><code>tveris.vercel.app/pay/' + esc(d.key) + '</code><button class="chipbtn">WhatsApp</button><button class="chipbtn">Email</button></div>');
+    html += '<div class="actions"><button class="btn" data-go="buyer">Switch to Daniel to pay →</button><button class="link" id="cancelBtn">Cancel request</button></div>';
+  } else if (d.status === "FUNDED") {
+    const left = secsLeft(d.shipBy);
+    html += banner("lock", "🔒", rm(d.listing.priceRm) + " is locked by Tveris", "The money is safe in the escrow contract and waiting for you. Submit the documents and load the container to get paid.", proof(d));
+    if (ignoring) {
+      html += '<div style="height:12px"></div>' + banner("bad", "👻", "Aina is ignoring the order (scam demo)", "If she does not load the container in " + mmss(left) + ", Tveris refunds Daniel automatically.");
+    } else if (!working) {
+      html += '<div class="form"><div class="field"><label class="k">Carrier</label><div class="val"><b>Straits Line</b><small>MV Straits Harmony · demo carrier with live tracking</small></div></div><div class="field"><label class="k">Load by</label><div class="val"><b>' + mmss(left) + '</b><small>or Daniel is refunded</small></div></div></div>';
+      html += '<div class="actions"><button class="btn yellow lg" data-ship="honest">🚢 Submit SI + BL and load the container</button></div>';
+      html += '<div class="cheat"><span class="k">Demo · what if the exporter cheats?</span><div class="row"><button data-ship="fake">Change the consignee on the BL and divert the container</button><button id="ignoreBtn">Never load the container</button></div></div>';
+    }
+  } else if (d.status === "SHIPPED") {
+    html += banner("wait", "🚢", "At sea · " + esc(d.shipment.tracking), "Tveris checked your documents and is following the container with the carrier. You are paid after delivery.", trackList(d) + proof(d));
+  } else if (d.status === "DELIVERED") {
+    html += banner("good", "✅", "Delivered and verified", "Waiting for Daniel to check the goods. You are paid automatically in " + mmss(secsLeft(d.inspectUntil)) + " if he reports no problem.", trackList(d));
+  } else if (d.status === "SETTLING") {
+    html += banner("wait", "⛓️", "Settling on BNB Chain…", "The Tveris agent is signing the verdict and sending it to the escrow contract.");
+  }
+  html += "</div></div>";
+  return html;
+}
+
+/* ---------------- importer (Daniel) ---------------- */
+function buyerView(d) {
+  const s = state.seller, b = (d && d.buyerInfo) || state.buyer;
+  let html = "";
+  const forMe = d && (!d.buyerInfo || d.buyerInfo.uid === state.buyer.uid);
+  if (d && !forMe && OPEN.includes(d.status)) {
+    return '<div class="panel"><div class="empty"><div class="ic">📭</div><h3>No requests for ' + esc(state.buyer.uid) + '</h3><p>The latest request was sent to ' + esc(d.buyerInfo.uid) + ", not to you.</p></div></div>";
+  }
+  if (!d || !OPEN.includes(d.status)) {
+    return '<div class="panel"><div class="empty"><div class="ic">📭</div><h3>No open payment requests</h3><p>When an exporter sends you a request, it appears here. Your finished orders are below.</p><p><button class="btn ghost" data-go="seller">Switch to Aina to create one</button></p></div></div>';
+  }
+  html += '<div class="panel"><div class="ph"><h2>' + (d.status === "REQUESTED" ? "Payment request from " + esc(s.company) : "Your order") + '</h2><span class="k">' + (d.chainId ? "deal #" + d.chainId : "new") + '</span></div><div class="pb">' + item(d.listing);
+  html += '<div class="form" style="margin-top:14px"><div class="field"><label class="k">Exporter</label><div class="val"><b>' + esc(s.company) + ' <span class="verified">✓ verified</span></b><small class="mono">' + esc(s.uid) + " · " + esc(s.name) + " · " + esc(s.city) + '</small></div></div><div class="field"><label class="k">Deliver to</label><div class="val"><b>' + esc(b.company || b.name) + "</b><small>" + esc(b.address) + " · " + esc(b.city) + " (" + esc(b.postcode) + ")</small></div></div></div>";
+  html += '<div style="height:16px"></div>' + busyBanner();
+
+  if (d.status === "REQUESTED") {
+    html += '<ul class="protect"><li>Your money goes to the Tveris escrow contract, not to the exporter</li><li>The exporter is paid only after the documents match and the container is delivered to you</li><li>Wrong consignee, wrong port or not loaded? Full refund</li></ul>';
+    if (!working) html += '<div class="actions"><button class="btn yellow lg full" id="payBtn">Pay ' + rm(d.listing.priceRm) + " safely</button></div>";
+    html += '<p style="color:var(--muted);font-size:12.5px;margin:10px 0 0" class="mono">' + (state.chain ? "from wallet " + short(state.chain.buyer.address) + " · " + state.chain.dealValue + " tBNB on BSC testnet" : "") + "</p>";
+  } else if (d.status === "FUNDED") {
+    html += banner("lock", "🔒", "Your money is safe", "Tveris is holding " + rm(d.listing.priceRm) + " in the escrow contract. Aina must load the container within " + mmss(secsLeft(d.shipBy)) + ", or you get it all back.", proof(d));
+  } else if (d.status === "SHIPPED") {
+    html += banner("wait", "🚢", "Your container is on its way", "Tveris checked the documents and is following the container with the carrier. Your money stays locked.", trackList(d));
+  } else if (d.status === "SETTLING") {
+    html += banner("wait", "⛓️", "Settling on BNB Chain…", "The Tveris agent is signing the verdict and sending it to the escrow contract.");
+  } else if (d.status === "DELIVERED" && !working) {
+    html += banner("good", "📦", "Your container arrived", "Check the goods. Is everything OK? If you do nothing, Aina is paid in " + mmss(secsLeft(d.inspectUntil)) + ".");
+    if (!reportOpen) {
+      html += '<div class="choices"><button class="btn good lg" id="confirmBtn">✓ Goods are good, pay Aina</button><button class="btn bad lg" id="reportBtn">✗ Report a problem</button></div>';
+    } else {
+      html += '<div class="panel soft" style="margin:16px 0 0"><div class="pb"><b>What is wrong?</b><div class="reasons">' +
+        ["Goods damaged", "Wrong goods in the container", "Short shipment"].map((r) => '<button class="reason" data-reason="' + esc(r) + '" aria-pressed="' + (r === reason) + '">' + esc(r) + "</button>").join("") +
+        '</div><div class="photos"><span class="ph">📷</span><span class="ph">📷</span>2 inspection photos attached</div><div class="actions"><button class="btn bad" id="sendReport">Send report and get a refund</button><button class="link" id="backReport">Back</button></div></div></div>';
+    }
+  }
+  html += "</div></div>";
+  return html;
+}
+
+/* ---------------- deal history (bottom) ---------------- */
+function historyView() {
+  const done = state.deals.filter((d) => d.status === "RELEASED" || d.status === "REFUNDED");
+  if (!done.length) return "";
+  return '<div class="panel"><div class="ph"><h2>Deal history</h2><span class="k">' + done.length + " settled on BNB Chain</span></div><div class=\"pb\" style=\"padding:0\">" +
+    done.map((d) => {
+      const good = d.status === "RELEASED";
+      return '<div style="padding:12px 14px;border-bottom:1px solid var(--line)">' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="mk ' + (good ? "ok" : "bad") + '">' + (good ? "✓" : "↩") + '</span><b style="font-size:14px">Deal #' + d.chainId + " · " + esc(d.listing.title) + '</b><span class="k" style="margin-left:auto">' + (good ? "Paid " + rm(d.listing.priceRm * 0.995) + " to Aina" : "Refunded " + rm(d.listing.priceRm) + " to Daniel") + "</span></div>" +
+        '<p style="margin:6px 0 6px 27px;font-size:12.5px;color:var(--muted)">' + esc(d.brief || "") + "</p>" +
+        '<div style="margin-left:27px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px">' + d.txs.map((t) => '<a class="mono" style="color:var(--accent)" href="' + txUrl(t.hash) + '" target="_blank" rel="noopener">' + esc(t.label.split(" (")[0]) + " ↗</a>").join("") +
+        (d.verdict ? '<span class="mono" style="color:var(--muted)">verdict ' + short(d.verdict.hash) + "</span>" : "") + "</div></div>";
+    }).join("") + "</div></div>";
+}
+
+/* ---------------- shared tracker ---------------- */
+function renderTracker(d) {
+  const st = d ? d.status : null;
+  const refunded = st === "REFUNDED";
+  const find = (p) => d && d.txs.find((t) => t.label.startsWith(p));
+  const rows = [
+    ["Request created", "Aina asks Daniel to pay", d && d.status !== undefined, null],
+    ["Paid and locked", "Money held on BNB Chain", d && !["REQUESTED", "FUNDING"].includes(st), find("Escrow funded")],
+    ["Documents checked", d && d.shipment ? "SI vs draft BL · " + d.shipment.tracking : "Tveris compares the SI and the BL", d && !!d.shipment && d.checks.find((c) => c.id === "docs").ok === true, find("Shipment recorded")],
+    ["Delivered and checked", "Agent follows the container", d && (["DELIVERED", "RELEASED"].includes(st)), null],
+    [refunded ? "Refunded to Daniel" : "Exporter paid", refunded ? "Money returned by the agent" : "Agent releases the money", d && (st === "RELEASED" || refunded), d && (st === "RELEASED" || refunded) ? d.txs[d.txs.length - 1] : null],
+  ];
+  let nowSet = false;
+  $("steps").innerHTML = rows.map(([title, sub, done, txr], i) => {
+    let cls = done ? "done" : "";
+    if (!done && !nowSet && d) { cls = "now"; nowSet = true; }
+    if (i === 4 && refunded) cls = "fail";
+    if (i === 2 && d && d.checks.find((c) => c.id === "docs").ok === false) cls = "fail";
+    if (refunded && i === 3 && !done) cls = "";
+    return '<li class="' + cls + '"><span class="dotc">' + (cls === "done" ? "✓" : cls === "fail" ? "↩" : i + 1) + "</span><div><b>" + esc(title) + "</b><small>" + esc(sub) + "</small>" + (txr ? txLink(txr) : "") + "</div></li>";
+  }).join("");
+  $("dealNo").textContent = d ? (d.chainId ? "deal #" + d.chainId : "request") : "no deal";
+
+  const lastAgent = d ? [...d.log].reverse().find((x) => x.actor === "agent") : null;
+  $("agentSays").textContent = !d ? "Waiting for a deal." : d.status === "REQUESTED" ? "Waiting for Daniel to pay." : lastAgent ? lastAgent.text : "Watching the deal.";
+  const by = d ? Object.fromEntries(d.checks.map((c) => [c.id, c])) : {};
+  const both = (a, b) => (!a || !b ? null : a.ok === false || b.ok === false ? false : a.ok && b.ok ? true : null);
+  const checkRows = d && d.shipment ? [
+    ["Draft BL matches the SI", by.docs && by.docs.ok],
+    ["Real container number", by.real && by.real.ok],
+    ["Weight matches the SI", by.weight && by.weight.ok],
+    ["Sent to Daniel's port and company", both(by.postcode, by.recipient)],
+    ["Delivered", by.delivered && by.delivered.ok],
+  ] : d && d.status === "REFUNDED" && !d.shipment ? [["Loaded before the deadline", false]] : [];
+  $("checks").innerHTML = checkRows.map(([label, ok]) => '<li class="' + (ok === false ? "bad" : "") + '"><span class="mk ' + (ok === true ? "ok" : ok === false ? "bad" : "") + '">' + (ok === true ? "✓" : ok === false ? "✗" : "") + "</span>" + esc(label) + "</li>").join("");
+
+  $("feed").innerHTML = d ? d.log.map((x) => '<div><span class="a ' + x.actor + '">' + x.actor + "</span>" + esc(x.text) + "</div>").join("") : "";
+  const c = state.chain;
+  $("wallets").innerHTML = c ? [
+    ["Tveris agent (escrow arbiter)", c.agent.address, c.agent.balance],
+    ["Escrow contract", c.escrow, null],
+    ["Daniel's wallet (importer)", c.buyer.address, c.buyer.balance],
+    ["Aina's wallet (exporter)", c.seller.address, c.seller.balance],
+  ].map(([l, a, bal]) => "<div><span>" + esc(l) + (bal !== null ? ' <small class="mono" style="color:var(--muted)">' + bnb(bal) + "</small>" : "") + '</span><a href="' + addrUrl(a) + '" target="_blank" rel="noopener">' + short(a) + " ↗</a></div>").join("") : "";
+  $("agentId").textContent = "agent";
+
+  $("pingBuyer").classList.toggle("on", !!d && role !== "buyer" && (st === "REQUESTED" || st === "DELIVERED"));
+  $("pingSeller").classList.toggle("on", !!d && role !== "seller" && st === "FUNDED" && !d.shipment && !ignoring);
+}
+
+function idCard() {
+  const seller = role === "seller";
+  const p = seller ? state.seller : state.buyer;
+  const done = state.deals.filter((x) => x.status === "RELEASED").length;
+  const photo = seller ? "/escrow/img/aina.jpg" : "/escrow/img/daniel.jpg";
+  return '<div class="idcard"><div class="photo" style="background-image:url(\'' + photo + '\')"></div><div class="in">' +
+    '<div class="head"><span class="brand">Tveris<br>// ' + (seller ? "Exporter" : "Importer") + '</span><span class="stat"><b>' + done + "</b><span>" + (seller ? "SHIPPED" : "RECEIVED") + "</span></span></div>" +
+    '<div class="name">' + esc(p.name.split(" ")[0]) + '</div>' +
+    '<div class="foot"><span class="role">' + esc(p.company.toUpperCase()) + '</span><div class="tags"><span class="ok">✓ VERIFIED</span><span>' + esc(p.city.toUpperCase()) + "</span><span>" + esc(p.postcode) + '</span></div>' +
+    '<div class="line"><span>ID <b>' + esc(p.uid) + '</b></span><button class="copy" data-copy="' + esc(p.uid) + '">copy</button></div></div></div></div>';
+}
+
+function renderSetup() {
+  const box = $("setup");
+  const c = state.chain;
+  if (!c) { box.hidden = false; $("setupTitle").textContent = "Connecting to BNB Chain…"; $("setupText").textContent = ""; $("setupBtn").hidden = true; return; }
+  if (c.error) { box.hidden = false; $("setupTitle").textContent = "BNB Chain not configured"; $("setupText").textContent = c.error; $("setupBtn").hidden = true; return; }
+  const agentBal = Number(c.agent.balance) / 1e18, buyerBal = Number(c.buyer.balance) / 1e18;
+  if (c.deployed && buyerBal >= 0.004) { box.hidden = true; return; }
+  box.hidden = false;
+  $("setupBtn").hidden = false;
+  $("setupTitle").textContent = agentBal < 0.012 ? "Fund the Tveris agent" : !c.deployed ? "Deploy the escrow" : "Top up Daniel's wallet";
+  $("setupText").innerHTML = agentBal < 0.012 ? "Ask @bnbchain_official_bot for tBNB to <code>" + esc(c.agent.address) + "</code>" : "One click, signed by the Tveris agent's wallet.";
+  $("setupBtn").disabled = agentBal < 0.012 || working;
+}
+
+function render() {
+  if (!state) return;
+  const d = deal();
+  if (d && d.status !== "FUNDED") ignoring = false;
+  const html = role === "seller" ? sellerView(d) : buyerView(d);
+  const typing = document.activeElement && document.activeElement.matches("#main input");
+  if (html !== lastHtml && !typing) {
+    const main = $("main");
+    const fresh = !lastHtml || main.dataset.role !== role || main.dataset.status !== (d ? d.status : "");
+    main.innerHTML = html;
+    if (fresh) main.classList.remove("fade"), void main.offsetWidth, main.classList.add("fade");
+    main.dataset.role = role;
+    main.dataset.status = d ? d.status : "";
+    lastHtml = html;
+  }
+  const hist = historyView();
+  if ($("history").dataset.html !== hist) { $("history").innerHTML = hist; $("history").dataset.html = hist; }
+  const card = idCard();
+  if ($("idcard").dataset.html !== card) { $("idcard").innerHTML = card; $("idcard").dataset.html = card; }
+  renderTracker(d);
+  renderSetup();
+}
+
+function load() {
+  state = JSON.parse(JSON.stringify(api.state()));
+  const open = state.deals.find((x) => OPEN.includes(x.status));
+  currentKey = open ? open.key : null;
+  render();
+}
+async function refreshChain() {
+  try { chain = await server(); } catch (e) { chain = { error: e.message }; }
+  load();
+}
+const live = (key) => db.deals.find((x) => x.key === key);
+
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.matches(".role")) return setRole(t.dataset.role);
+  if (t.dataset.go) return setRole(t.dataset.go);
+  if (t.dataset.copy) { navigator.clipboard && navigator.clipboard.writeText(t.dataset.copy); return toast("Copied " + t.dataset.copy); }
+  if (t.dataset.pick) { picked = t.dataset.pick; lastHtml = ""; return render(); }
+  if (t.dataset.reason) { reason = t.dataset.reason; lastHtml = ""; return render(); }
+  const d = deal();
+  switch (t.id) {
+    case "createBtn": {
+      if (!chain || chain.error || !chain.deployed) return toast("Set up the escrow first (see the panel on the right).", 5000);
+      const f = draftFor(picked);
+      return act(async () => {
+        const r = api.requests({ listing: picked, title: f.title, priceRm: Number(f.priceRm), weightKg: Number(f.weightKg), buyer: { uid: f.uid, name: f.name, phone: f.phone, address: f.address, postcode: f.postcode, city: f.city } });
+        currentKey = r.key;
+      }, "Request sent to " + f.uid + ". Switch to Daniel to pay.");
+    }
+    case "cancelBtn": return act(async () => { api.cancel(live(d.key)); currentKey = null; });
+    case "payBtn": return act(() => api.pay(live(d.key)).then(refreshChain), "Paid. Your money is locked in the escrow on BNB Chain.", "Paying into escrow on BNB Chain…");
+    case "confirmBtn": return act(() => api.confirm(live(d.key)).then(refreshChain), "Thanks! Tveris paid Aina on BNB Chain.", "Releasing the payment on BNB Chain…");
+    case "reportBtn": reportOpen = true; lastHtml = ""; return render();
+    case "backReport": reportOpen = false; lastHtml = ""; return render();
+    case "sendReport": return act(() => api.dispute(live(d.key), reason).then(refreshChain), "Report sent. Tveris refunded you on BNB Chain.", "Refunding you on BNB Chain…");
+    case "ignoreBtn": ignoring = true; lastHtml = ""; return render();
+    case "setupBtn": return act(() => server({ action: "setup" }).then(refreshChain), "Escrow ready on BNB Chain.", "Setting up the escrow on BNB Chain…");
+  }
+  if (t.dataset.ship) return act(() => api.ship(live(d.key), t.dataset.ship), t.dataset.ship === "fake" ? "Aina changed the consignee… watch Tveris." : "Loaded! Shipment recorded on BNB Chain.", "Recording the shipment on BNB Chain…");
+});
+document.addEventListener("input", (e) => {
+  const f = e.target.dataset && e.target.dataset.f;
+  if (f) draftFor(picked)[f] = e.target.value;
+});
+document.querySelectorAll(".role").forEach((b) => b.setAttribute("aria-pressed", b.dataset.role === role));
+setInterval(load, 1000);
+setInterval(refreshChain, 15000);
+refreshChain();
+</script>
+</body>
+</html>
