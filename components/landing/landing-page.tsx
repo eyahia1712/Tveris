@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { TverisLogo } from "@/components/brand/logo";
+import { ProblemStats } from "@/components/landing/problem-stats";
 import { ShipScene } from "@/components/landing/ship-scene";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { cn } from "@/lib/utils";
@@ -116,21 +117,6 @@ function Hero({ numbers }: { numbers: LandingNumbers | null }) {
   );
 }
 
-const PROBLEMS = [
-  {
-    title: "The right email is hard to find",
-    body: "A document check sits between a berthing report and a phishing mail. Staff read every message to decide what it needs, and a request that is missed is never checked.",
-  },
-  {
-    title: "Comparing by eye is slow and risky",
-    body: "Shipper, consignee, notify party, both ports, container count and gross weight, across two documents, hundreds of times a week. One missed consignee change releases cargo to the wrong company.",
-  },
-  {
-    title: "The same field is written differently",
-    body: "“Port of Loading” on the SI is “Load Port” on the BL. Values arrive as text, Excel, Word, PDF and scans, some of them blank or unreadable.",
-  },
-];
-
 function Problem() {
   return (
     <section id="problem" className="scroll-mt-20 border-y border-[var(--hairline-warm)] bg-[var(--paper-warm-2)] py-16 md:py-24">
@@ -139,15 +125,7 @@ function Problem() {
         <h2 className="mt-3 max-w-3xl text-[clamp(1.7rem,3.4vw,2.6rem)] leading-tight font-medium tracking-[-0.02em]">
           The work is not hard. Finding it, and doing it exactly, at volume, is.
         </h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {PROBLEMS.map((item, index) => (
-            <article key={item.title} className="border border-[var(--hairline-warm)] bg-[var(--paper-warm)] p-6">
-              <p className="font-mono text-[13px] text-[var(--ink-3)]">0{index + 1}</p>
-              <h3 className="mt-3 text-[18px] leading-snug font-medium">{item.title}</h3>
-              <p className="mt-3 text-[14px] leading-relaxed text-[var(--ink-2)]">{item.body}</p>
-            </article>
-          ))}
-        </div>
+        <ProblemStats />
       </div>
     </section>
   );
