@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { TverisLogo } from "@/components/brand/logo";
-import { ClaudeMark, GmailMark, SampleInboxMark } from "@/components/brand/source-marks";
+import { BnbMark, ClaudeMark, GmailMark } from "@/components/brand/source-marks";
+import { ClaudeChat } from "@/components/dashboard-home/claude-chat";
 import { CATEGORY_COLOR } from "@/components/viz/inbox-canvas";
 import { Icon } from "@/components/icons";
 import { useProcessing } from "@/components/dashboard/api";
@@ -132,7 +133,7 @@ export function DashboardHome({ overview, brief, source, ai, gmailEmail }: Dashb
 
 // -- chrome ----------------------------------------------------------------------
 
-function TopBar({ source, gmailEmail, ai }: { source: SourceParam; gmailEmail: string | null; ai: { enabled: boolean; model: string } }) {
+function TopBar({ source, gmailEmail }: { source: SourceParam; gmailEmail: string | null; ai: { enabled: boolean; model: string } }) {
   return (
     <header className="border-b border-[var(--hairline-warm)]">
       <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-x-5 gap-y-2 px-5 py-4 md:px-8">
@@ -146,14 +147,20 @@ function TopBar({ source, gmailEmail, ai }: { source: SourceParam; gmailEmail: s
           <Tab href="/connect" label="Sources" />
         </nav>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="inline-flex min-h-9 items-center gap-2 rounded-[6px] border border-[var(--hairline-warm)] bg-white px-2.5">
-            {source === "gmail" ? <GmailMark size={16} /> : <SampleInboxMark size={16} />}
-            <span className="text-[12.5px]">{source === "gmail" ? (gmailEmail ?? "Gmail") : "Sample inbox"}</span>
-          </span>
-          <span className="inline-flex min-h-9 items-center gap-2 rounded-[6px] border border-[var(--hairline-warm)] bg-white px-2.5">
-            <ClaudeMark size={15} />
-            <span className="text-[12.5px] text-[var(--ink-2)]">{ai.enabled ? ai.model : "Claude AI"}</span>
-          </span>
+          {source === "gmail" ? (
+            <span className="inline-flex min-h-9 items-center gap-2 rounded-[6px] border border-[var(--hairline-warm)] bg-white px-2.5">
+              <GmailMark size={16} />
+              <span className="text-[12.5px]">{gmailEmail ?? "Gmail"}</span>
+            </span>
+          ) : null}
+          <Link
+            href={`/escrow?source=${source}`}
+            className="xv-focus inline-flex min-h-9 items-center gap-2 rounded-[6px] border border-[#F0B90B]/70 bg-[#FFF8DD] px-2.5 transition-colors hover:bg-[#FFEFB0]"
+          >
+            <BnbMark size={16} />
+            <span className="text-[12.5px] font-medium">Trade escrow</span>
+          </Link>
+          <ClaudeChat source={source} label="Claude AI" />
         </div>
       </div>
     </header>
