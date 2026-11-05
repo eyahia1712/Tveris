@@ -477,6 +477,7 @@ let reportOpen = false;
 let reason = "Goods damaged";
 let ignoring = false;
 let lastHtml = "";
+let composing = false;
 
 function toast(text, ms = 3800) {
   const el = $("toast");
@@ -545,6 +546,12 @@ function busyBanner() { return working && workingText ? banner("wait", "⛓️",
 function sellerView(d) {
   let html = "";
   const open = d && OPEN.includes(d.status);
+  if (!open && !composing) {
+    const settled = state.deals.filter((x) => x.status === "RELEASED" || x.status === "REFUNDED").length;
+    return '<div class="panel"><div class="empty"><div class="ic">🚢</div><h3>Hi Aina, ready for the next shipment?</h3><p>' +
+      (settled ? settled + " deal" + (settled === 1 ? "" : "s") + " settled on BNB Chain so far. Your history is below." : "Create a safe-payment request and the importer pays into escrow on BNB Chain.") +
+      '</p><p><button class="btn yellow lg" id="newBtn">+ Create new payment request</button></p></div></div>';
+  }
   if (!open) {
     const f = draftFor(picked);
     html += '<div class="panel"><div class="ph"><h2>New safe-payment request</h2><span class="k">edit anything</span></div><div class="pb">';
@@ -563,7 +570,7 @@ function sellerView(d) {
         '<div><label class="k" for="fPost">Port code</label><input id="fPost" data-f="postcode" value="' + esc(f.postcode) + '" maxlength="6"></div>' +
         '<div><label class="k" for="fCity">Port</label><input id="fCity" data-f="city" value="' + esc(f.city) + '" maxlength="40"></div>' +
       "</div></div></div></div>";
-    html += '<div class="actions"><button class="btn yellow lg" id="createBtn"' + (working ? " disabled" : "") + '>Create payment request</button><span style="color:var(--muted);font-size:13px">The importer pays Tveris. You are paid after the documents and the container check out.</span></div>';
+    html += '<div class="actions"><button class="btn yellow lg" id="createBtn"' + (working ? " disabled" : "") + '>Create payment request</button><button class="link" id="backBtn">Back</button><span style="color:var(--muted);font-size:13px">The importer pays Tveris. You are paid after the documents and the container check out.</span></div>';
     html += "</div></div>";
     return html;
   }
@@ -635,6 +642,8 @@ function buyerView(d) {
 
 /* ---------------- deal history (bottom) ---------------- */
 function historyView() {
+  const d = deal();
+  if (role !== "seller" || composing || (d && OPEN.includes(d.status))) return "";
   const done = state.deals.filter((d) => d.status === "RELEASED" || d.status === "REFUNDED");
   if (!done.length) return "";
   return '<div class="panel"><div class="ph"><h2>Deal history</h2><span class="k">' + done.length + " settled on BNB Chain</span></div><div class=\"pb\" style=\"padding:0\">" +
@@ -656,7 +665,7 @@ function renderTracker(d) {
   const rows = [
     ["Request created", "Aina asks Daniel to pay", d && d.status !== undefined, null],
     ["Paid and locked", "Money held on BNB Chain", d && !["REQUESTED", "FUNDING"].includes(st), find("Escrow funded")],
-    ["Documents checked", d && d.shipment ? "SI vs draft BL · " + d.shipment.tracking : "Tveris compares the SI and the BL", d && !!d.shipment && d.checks.find((c) => c.id === "docs").ok === true, find("Shipment recorded")],
+    ["Documents checked", d && d.shipment ? "SI vs draft BL · " + d.shipment.tracking : "Tveris compares the SI and the BL", d && !!d.shipment && (d.checks.find((c) => c.id === "docs") || {}).ok === true, find("Shipment recorded")],
     ["Delivered and checked", "Agent follows the container", d && (["DELIVERED", "RELEASED"].includes(st)), null],
     [refunded ? "Refunded to Daniel" : "Exporter paid", refunded ? "Money returned by the agent" : "Agent releases the money", d && (st === "RELEASED" || refunded), d && (st === "RELEASED" || refunded) ? d.txs[d.txs.length - 1] : null],
   ];
@@ -665,7 +674,7 @@ function renderTracker(d) {
     let cls = done ? "done" : "";
     if (!done && !nowSet && d) { cls = "now"; nowSet = true; }
     if (i === 4 && refunded) cls = "fail";
-    if (i === 2 && d && d.checks.find((c) => c.id === "docs").ok === false) cls = "fail";
+    if (i === 2 && d && (d.checks.find((c) => c.id === "docs") || {}).ok === false) cls = "fail";
     if (refunded && i === 3 && !done) cls = "";
     return '<li class="' + cls + '"><span class="dotc">' + (cls === "done" ? "✓" : cls === "fail" ? "↩" : i + 1) + "</span><div><b>" + esc(title) + "</b><small>" + esc(sub) + "</small>" + (txr ? txLink(txr) : "") + "</div></li>";
   }).join("");
@@ -775,8 +784,11 @@ document.addEventListener("click", (e) => {
       return act(async () => {
         const r = api.requests({ listing: picked, title: f.title, priceRm: Number(f.priceRm), weightKg: Number(f.weightKg), buyer: { uid: f.uid, name: f.name, phone: f.phone, address: f.address, postcode: f.postcode, city: f.city } });
         currentKey = r.key;
+        composing = false;
       }, "Request sent to " + f.uid + ". Switch to Daniel to pay.");
     }
+    case "newBtn": composing = true; lastHtml = ""; return render();
+    case "backBtn": composing = false; lastHtml = ""; return render();
     case "cancelBtn": return act(async () => { api.cancel(live(d.key)); currentKey = null; });
     case "payBtn": return act(() => api.pay(live(d.key)).then(refreshChain), "Paid. Your money is locked in the escrow on BNB Chain.", "Paying into escrow on BNB Chain…");
     case "confirmBtn": return act(() => api.confirm(live(d.key)).then(refreshChain), "Thanks! Tveris paid Aina on BNB Chain.", "Releasing the payment on BNB Chain…");
