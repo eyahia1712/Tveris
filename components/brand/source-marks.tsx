@@ -63,3 +63,13 @@ export function OutlookMark({ size = 28 }: { size?: number }) {
     </svg>
   );
 }
+
+/** BNB Chain: the gold diamond mark. */
+export function BnbMark({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
+      <circle cx="24" cy="24" r="24" fill="#F0B90B" />
+      <path d="M24 10l4.2 4.2-10.5 10.5-4.2-4.2zM30.4 16.4l4.2 4.2-10.6 10.6-4.2-4.2zM17.6 23.6l4.2 4.2-4.2 4.2-4.2-4.2zM24 30l4.2 4.2L24 38.4l-4.2-4.2zM34.6 23.6l4.2 4.2-4.2 4.2-4.2-4.2z" fill="#fff" />
+    </svg>
+  );
+}
